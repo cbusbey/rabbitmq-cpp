@@ -42,43 +42,47 @@ namespace rabbitmqcpp
   {
     public:
       virtual ~AbstractConnection() = 0;
-      void open(char const * host, int port); 
 
     protected:
-      boost::mutex connMutex_;
+      void connect(char const * host, int port); 
       boost::optional<amqp_connection_state_t> conn_;
   };
 
-  ///
   /// Synchonous Connection 
-  ///
   class SyncConnection : public AbstractConnection
   {
     public:
-    void send(char const* exchange, char const* routingkey, char const* message, bool persistent = false);
+      void open(char const * host, int port); 
+      void send(char const* exchange, char const* routingkey, char const* message, bool persistent = false);
 
-    //TODO: synchonous receive
+      //TODO: synchonous receive
+
+    private:
+      boost::mutex connMutex_;
   };
 
-  ///
   /// Connection relays subscription to async callback
-  ///
   class AsyncConnection : public AbstractConnection
   {
     public:
+      AsyncConnection(char const * host, int port, char const * exchange, char const * bindingkey): 
+        host_(host),
+        port_(port),
+        exchange_(exchange),
+        bindingkey_(bindingkey),
+        doRun_(false) {}
+
       typedef boost::function<void(char const * exchange, char const * routingkey, char const * message)> TMsgCallback;
 
       //TODO: allow multiple subscription types?
       void run(const TMsgCallback & cb);
       void stop();
+
       void operator()();
 
-      AsyncConnection(char const * exchange, char const * bindingkey): 
-        exchange_(exchange),
-        bindingkey_(bindingkey),
-        doRun_(false) {}
-
     private:
+      const std::string host_;
+      const int port_;
       const std::string exchange_;
       const std::string bindingkey_;
 

@@ -15,7 +15,7 @@ AbstractConnection::~AbstractConnection()
   amqp_destroy_connection(*conn_);
 }
 
-void AbstractConnection::open(char const * host, int port)
+void AbstractConnection::connect(char const * host, int port)
 {
   boost::mutex::scoped_lock(connMutex_);
 
@@ -37,6 +37,12 @@ void AbstractConnection::open(char const * host, int port)
   amqp_login(*conn_, "/", 0, 131072, 0, AMQP_SASL_METHOD_PLAIN, "guest", "guest");
   amqp_channel_open(*conn_, 1);
   amqp_get_rpc_reply(*conn_);
+}
+
+void SyncConnection::open(char const * host, int port)
+{
+  boost::mutex::scoped_lock(connMutex_);
+  connect(host, port);
 }
 
 void SyncConnection::send(char const* exchange, char const* routingkey, char const* message, bool persistent)
@@ -85,7 +91,7 @@ void AsyncConnection::run(const TMsgCallback & cb)
 
 void AsyncConnection::operator()()
 {
-  boost::mutex::scoped_lock(connMutex_);
+  connect(host_.c_str(), port_);
 
   if(!conn_)
     throw runtime_error("cannot subscribe, not connected");
