@@ -52,13 +52,18 @@ void Client::send(char const* exchange, char const* routingkey, char const* mess
 
   if(persistent)
     props.delivery_mode = 2;
+  else 
+    props.delivery_mode = 1;
 
-  amqp_basic_publish(*conn_,
+  if(amqp_basic_publish(*conn_,
     1,
 		amqp_cstring_bytes(exchange),
 		amqp_cstring_bytes(routingkey),
 		0,
 		0,
 		&props,
-		amqp_cstring_bytes(message));
+		amqp_cstring_bytes(message)) < 0)
+  {
+    throw runtime_error("error publishing message");
+  }
 }
