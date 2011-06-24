@@ -73,17 +73,19 @@ void SyncConnection::send(char const* exchange, char const* routingkey, char con
   }
 }
 
-void AsyncConnection::stop()
+void AsyncConnection::close()
 {
   boost::mutex::scoped_lock(runMutex_);
   doRun_ = false;
 }
 
-void AsyncConnection::run(const TMsgCallback & cb)
+void AsyncConnection::open(char const * host, int port)
 {
   boost::mutex::scoped_lock(runMutex_);
   if(doRun_)
     throw runtime_error("alreading running");
+
+  connect(host, port);
 
   doRun_ = true;
   pWorkerThread_.reset(new boost::thread(boost::ref(*this)));
@@ -91,8 +93,6 @@ void AsyncConnection::run(const TMsgCallback & cb)
 
 void AsyncConnection::operator()()
 {
-  connect(host_.c_str(), port_);
-
   if(!conn_)
     throw runtime_error("cannot subscribe, not connected");
 

@@ -43,6 +43,9 @@ namespace rabbitmqcpp
     public:
       virtual ~AbstractConnection() = 0;
 
+      virtual void open(char const * host, int port) = 0; 
+      virtual void close() = 0;
+
     protected:
       void connect(char const * host, int port); 
       boost::optional<amqp_connection_state_t> conn_;
@@ -52,11 +55,11 @@ namespace rabbitmqcpp
   class SyncConnection : public AbstractConnection
   {
     public:
-      void open(char const * host, int port); 
-      void send(char const* exchange, char const* routingkey, char const* message, bool persistent = false);
+      virtual void open(char const * host, int port); 
+      virtual void close() {}
 
       //TODO: synchonous receive
-
+      void send(char const* exchange, char const* routingkey, char const* message, bool persistent = false);
     private:
       boost::mutex connMutex_;
   };
@@ -65,24 +68,19 @@ namespace rabbitmqcpp
   class AsyncConnection : public AbstractConnection
   {
     public:
-      AsyncConnection(char const * host, int port, char const * exchange, char const * bindingkey): 
-        host_(host),
-        port_(port),
+      typedef boost::function<void(char const * exchange, char const * routingkey, char const * message)> TMsgCallback;
+
+      AsyncConnection(const TMsgCallback & cb, char const * exchange, char const * bindingkey): 
         exchange_(exchange),
         bindingkey_(bindingkey),
         doRun_(false) {}
 
-      typedef boost::function<void(char const * exchange, char const * routingkey, char const * message)> TMsgCallback;
-
-      //TODO: allow multiple subscription types?
-      void run(const TMsgCallback & cb);
-      void stop();
+      virtual void open(char const * host, int port);
+      virtual void close();
 
       void operator()();
 
     private:
-      const std::string host_;
-      const int port_;
       const std::string exchange_;
       const std::string bindingkey_;
 
