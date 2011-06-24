@@ -35,3 +35,30 @@ void Client::connect(char const * host, int port)
   amqp_channel_open(*conn_, 1);
   amqp_get_rpc_reply(*conn_);
 }
+
+void Client::send(char const* exchange, char const* routingkey, char const* message)
+{
+  send(exchange, routingkey, message, false);
+}
+
+void Client::send(char const* exchange, char const* routingkey, char const* message, bool persistent)
+{
+  if(!conn_)
+    throw runtime_error("client not connected, cannot send message");
+
+  amqp_basic_properties_t props;
+  props._flags = AMQP_BASIC_CONTENT_TYPE_FLAG | AMQP_BASIC_DELIVERY_MODE_FLAG;
+  props.content_type = amqp_cstring_bytes("text/plain");
+
+  if(persistent)
+    props.delivery_mode = 2;
+
+  amqp_basic_publish(*conn_,
+    1,
+		amqp_cstring_bytes(exchange),
+		amqp_cstring_bytes(routingkey),
+		0,
+		0,
+		&props,
+		amqp_cstring_bytes(message));
+}

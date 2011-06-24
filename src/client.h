@@ -17,6 +17,11 @@ namespace rabbitmqcpp
       void connect(char const * host, int port); 
       virtual ~Client();
 
+      /// sends message w/o persistence
+      void send(char const* exchange, char const* routingkey, char const* message);
+
+      void send(char const* exchange, char const* routingkey, char const* message, bool persistent);
+
     private:
       boost::optional<amqp_connection_state_t> conn_;
   };
