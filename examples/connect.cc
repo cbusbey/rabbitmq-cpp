@@ -4,7 +4,7 @@ using namespace rabbitmqcpp;
 
 int main(int argc, char * argv[])
 {
-  Client c;
+  SyncClient c;
   c.connect("localhost", 5672);
 //  sleep(2);
 // c.connect("localhost", 5672);
