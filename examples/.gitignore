@@ -1,5 +1,6 @@
 .deps/
+*.o
 consumer
-consumer.o
 producer
-producer.o
+connect
+.libs

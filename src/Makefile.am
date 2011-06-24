@@ -1,3 +1,5 @@
+include ../Common.mk
+
 MY_TARGET=librabbitmq_cpp.a
 
 lib_LIBRARIES=$(MY_TARGET)
