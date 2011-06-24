@@ -1,0 +1,35 @@
+AC_INIT([rabbitmq-cpp],[1.0.0])
+AC_CONFIG_AUX_DIR(configure.d)
+
+AM_INIT_AUTOMAKE
+
+AC_CONFIG_HEADERS(config.h)
+
+AC_PROG_CXX()
+AC_PROG_CC()
+AC_PROG_RANLIB()
+AM_PROG_LIBTOOL()
+
+#-----------------------------------------------------------------------------
+# gcc/flags/libs
+
+# CXX="ccache g++"
+SHAREDFLAGS="-Wall -O3" #-march=native
+CFLAGS="$SHAREDFLAGS"
+CXXFLAGS="$SHAREDFLAGS"
+
+AC_SUBST(CFLAGS)
+AC_SUBST(CXXFLAGS)
+
+# Checks for header files.
+AC_CHECK_HEADERS(stdio.h)
+
+
+#-----------------------------------------------------------------------------
+AC_CONFIG_FILES(
+	Makefile
+	src/Makefile
+)
+
+AC_OUTPUT()
+

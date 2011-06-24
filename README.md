@@ -10,10 +10,12 @@ Build and checkout in the project root.
 
     git clone git://github.com/rabbitmq/rabbitmq-c.git
     git clone git://github.com/rabbitmq/rabbitmq-codegen.git
-    cd rabbitmq-c
+    pushd rabbitmq-c
     autoreconf -i
     ./configure
     make
 
-
-
+Once deps are built...
+    ./bootstrap
+    ./configure
+    make
