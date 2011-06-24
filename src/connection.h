@@ -31,7 +31,10 @@
 #include <amqp_framing.h>
 
 #include <boost/optional.hpp>
+#include <boost/scoped_ptr.hpp>
 #include <boost/function.hpp>
+#include <boost/thread/mutex.hpp>
+#include <boost/thread/thread.hpp>
 
 namespace rabbitmqcpp
 {
@@ -42,6 +45,7 @@ namespace rabbitmqcpp
       void open(char const * host, int port); 
 
     protected:
+      boost::mutex connMutex_;
       boost::optional<amqp_connection_state_t> conn_;
   };
 
@@ -51,10 +55,7 @@ namespace rabbitmqcpp
   class SyncConnection : public AbstractConnection
   {
     public:
-
-    /// sends message w/o persistence
-    void send(char const* exchange, char const* routingkey, char const* message);
-    void send(char const* exchange, char const* routingkey, char const* message, bool persistent);
+    void send(char const* exchange, char const* routingkey, char const* message, bool persistent = false);
 
     //TODO: synchonous receive
   };
@@ -68,8 +69,22 @@ namespace rabbitmqcpp
       typedef boost::function<void(char const * exchange, char const * routingkey, char const * message)> TMsgCallback;
 
       //TODO: allow multiple subscription types?
-      void run(char const * exchange, char const * bindingKey, const TMsgCallback & cb);
+      void run(const TMsgCallback & cb);
       void stop();
+      void operator()();
+
+      AsyncConnection(char const * exchange, char const * bindingkey): 
+        exchange_(exchange),
+        bindingkey_(bindingkey),
+        doRun_(false) {}
+
+    private:
+      const std::string exchange_;
+      const std::string bindingkey_;
+
+      boost::mutex runMutex_;
+      bool doRun_;
+      boost::scoped_ptr<boost::thread> pWorkerThread_;
   };
 }
 

@@ -3,7 +3,7 @@ include ../Common.mk
 noinst_PROGRAMS=connect producer consumer
 
 AM_CXXFLAGS+=-I$(top_builddir)/src
-AM_LDFLAGS+=-L$(top_builddir)/src -lrabbitmq_cpp
+AM_LDFLAGS+=-L$(top_builddir)/src -lrabbitmq_cpp -lboost_thread
 
 connect_SOURCES=connect.cc
 producer_SOURCES=producer.cc

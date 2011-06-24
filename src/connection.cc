@@ -17,6 +17,8 @@ AbstractConnection::~AbstractConnection()
 
 void AbstractConnection::open(char const * host, int port)
 {
+  boost::mutex::scoped_lock(connMutex_);
+
   if(conn_)
   {
     throw runtime_error("already connected!");
@@ -37,13 +39,9 @@ void AbstractConnection::open(char const * host, int port)
   amqp_get_rpc_reply(*conn_);
 }
 
-void SyncConnection::send(char const* exchange, char const* routingkey, char const* message)
-{
-  send(exchange, routingkey, message, false);
-}
-
 void SyncConnection::send(char const* exchange, char const* routingkey, char const* message, bool persistent)
 {
+  boost::mutex::scoped_lock(connMutex_);
   if(!conn_)
     throw runtime_error("client not connected, cannot send message");
 
@@ -71,11 +69,24 @@ void SyncConnection::send(char const* exchange, char const* routingkey, char con
 
 void AsyncConnection::stop()
 {
-
+  boost::mutex::scoped_lock(runMutex_);
+  doRun_ = false;
 }
 
-void AsyncConnection::run(char const * exchange, char const * bindingkey, const TMsgCallback & cb)
+void AsyncConnection::run(const TMsgCallback & cb)
 {
+  boost::mutex::scoped_lock(runMutex_);
+  if(doRun_)
+    throw runtime_error("alreading running");
+
+  doRun_ = true;
+  pWorkerThread_.reset(new boost::thread(boost::ref(*this)));
+}
+
+void AsyncConnection::operator()()
+{
+  boost::mutex::scoped_lock(connMutex_);
+
   if(!conn_)
     throw runtime_error("cannot subscribe, not connected");
 
@@ -88,7 +99,7 @@ void AsyncConnection::run(char const * exchange, char const * bindingkey, const 
     throw runtime_error("out of memory while copying queue name");
   }
 
-  amqp_queue_bind(*conn_, 1, queuename, amqp_cstring_bytes(exchange), amqp_cstring_bytes(bindingkey), amqp_empty_table);
+  amqp_queue_bind(*conn_, 1, queuename, amqp_cstring_bytes(exchange_.c_str()), amqp_cstring_bytes(bindingkey_.c_str()), amqp_empty_table);
   amqp_get_rpc_reply(*conn_);
 
   amqp_basic_consume(*conn_, 1, queuename, amqp_empty_bytes, 0, 1, 0, amqp_empty_table);
@@ -104,6 +115,12 @@ void AsyncConnection::run(char const * exchange, char const * bindingkey, const 
 
   while (true) 
   {
+    {
+      boost::mutex::scoped_lock(runMutex_);
+      if(!doRun_)
+        break;
+    }
+
     amqp_maybe_release_buffers(*conn_);
 
     //wait method frame
