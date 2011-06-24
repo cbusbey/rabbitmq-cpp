@@ -1,0 +1,3 @@
+.deps/
+client.o
+librabbitmq_cpp.a

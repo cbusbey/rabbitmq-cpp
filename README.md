@@ -16,6 +16,7 @@ Build and checkout in the project root.
     make
 
 Once deps are built...
+
     ./bootstrap
     ./configure
     make
