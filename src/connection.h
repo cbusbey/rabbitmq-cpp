@@ -35,20 +35,20 @@
 
 namespace rabbitmqcpp
 {
-  class AbstractClient
+  class AbstractConnection
   {
     public:
-      virtual ~AbstractClient() = 0;
-      void connect(char const * host, int port); 
+      virtual ~AbstractConnection() = 0;
+      void open(char const * host, int port); 
 
     protected:
       boost::optional<amqp_connection_state_t> conn_;
   };
 
   ///
-  /// Synchonous Client 
+  /// Synchonous Connection 
   ///
-  class SyncClient : public AbstractClient
+  class SyncConnection : public AbstractConnection
   {
     public:
 
@@ -60,9 +60,9 @@ namespace rabbitmqcpp
   };
 
   ///
-  /// Client relays subscription to async callback
+  /// Connection relays subscription to async callback
   ///
-  class AsyncClient : public AbstractClient
+  class AsyncConnection : public AbstractConnection
   {
     public:
       typedef boost::function<void(char const * exchange, char const * routingkey, char const * message)> TMsgCallback;

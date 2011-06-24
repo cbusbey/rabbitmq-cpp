@@ -1,10 +1,11 @@
 #include <stdexcept>
-#include "client.h"
+
+#include "connection.h"
 
 using namespace rabbitmqcpp;
 using namespace std;
 
-AbstractClient::~AbstractClient()
+AbstractConnection::~AbstractConnection()
 {
   if(!conn_)
     return;
@@ -14,11 +15,11 @@ AbstractClient::~AbstractClient()
   amqp_destroy_connection(*conn_);
 }
 
-void AbstractClient::connect(char const * host, int port)
+void AbstractConnection::open(char const * host, int port)
 {
   if(conn_)
   {
-    throw runtime_error("client already connected!");
+    throw runtime_error("already connected!");
   }
 
   conn_ = amqp_new_connection();
@@ -36,12 +37,12 @@ void AbstractClient::connect(char const * host, int port)
   amqp_get_rpc_reply(*conn_);
 }
 
-void SyncClient::send(char const* exchange, char const* routingkey, char const* message)
+void SyncConnection::send(char const* exchange, char const* routingkey, char const* message)
 {
   send(exchange, routingkey, message, false);
 }
 
-void SyncClient::send(char const* exchange, char const* routingkey, char const* message, bool persistent)
+void SyncConnection::send(char const* exchange, char const* routingkey, char const* message, bool persistent)
 {
   if(!conn_)
     throw runtime_error("client not connected, cannot send message");
@@ -68,12 +69,12 @@ void SyncClient::send(char const* exchange, char const* routingkey, char const* 
   }
 }
 
-void AsyncClient::stop()
+void AsyncConnection::stop()
 {
 
 }
 
-void AsyncClient::run(char const * exchange, char const * bindingkey, const TMsgCallback & cb)
+void AsyncConnection::run(char const * exchange, char const * bindingkey, const TMsgCallback & cb)
 {
   if(!conn_)
     throw runtime_error("cannot subscribe, not connected");
