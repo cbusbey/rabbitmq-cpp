@@ -20,3 +20,7 @@ Once deps are built...
     ./bootstrap
     ./configure
     make
+
+# EXAMPLES
+    
+    see examples/
