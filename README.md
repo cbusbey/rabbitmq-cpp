@@ -21,6 +21,18 @@ Once deps are built...
     ./configure
     make
 
-# EXAMPLES
-    
-    see examples/
+# RUNNING THE EXAMPLES
+
+Arrange for a RabbitMQ to be running on 'localhost'
+
+In one terminal run
+
+    [terminal1]$ ./examples/consumer localhost 5672 amq.topic test
+
+In another terminal,
+
+    [terminal2]$ ./examples/producer localhost 5672 amq.topic test "hello world"
+
+You should see output similar to the following in terminal 1
+
+    "hello world"
