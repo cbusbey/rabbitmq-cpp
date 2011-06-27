@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include <async_connection.h>
+#include <client.h>
 
 using namespace rabbitmqcpp;
 
@@ -22,10 +22,12 @@ int main(int argc, char * argv[])
   char const * exchange = argv[3];
   char const * bindingkey = argv[4];
 
-  AsyncConnection::TMsgCallback cb = boost::bind( onMessage,  _1, _2, _3);
 
-  AsyncConnection c(cb, exchange, bindingkey);
-  c.open(host, port);
+  Client c(host, port);
+  c.connect();
+
+  Client::TMsgCallback cb = boost::bind( onMessage,  _1, _2, _3);
+  c.subscribe(cb, exchange, bindingkey);
 
   //sit and spin
   while(true) 

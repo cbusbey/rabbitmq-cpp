@@ -14,7 +14,6 @@ namespace rabbitmqcpp
   class AsyncConnection : public Connection
   {
     public:
-
       //NOTE: responsibility of callback to free up exchange, routingkey, and message (delete[])
       typedef boost::function<void(char const * exchange, char const * routingkey, char const * message)> TMsgCallback;
 
