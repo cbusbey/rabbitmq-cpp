@@ -1,5 +1,5 @@
 #include <iostream>
-#include <sync_connection.h>
+#include <client.h>
 
 using namespace rabbitmqcpp;
 
@@ -17,8 +17,8 @@ int main(int argc, char * argv[])
   char const * routingkey = argv[4];
   char const * message = argv[5];
 
-  SyncConnection c;
-  c.open(host, port);
+  Client c(host, port);
+  c.connect();
 
   c.send(exchange, routingkey, message);
 }

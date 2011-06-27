@@ -24,6 +24,8 @@ namespace rabbitmqcpp
         bindingkey_(bindingkey),
         doRun_(false) {}
 
+      virtual ~AsyncConnection() {}
+
       virtual void open(char const * host, int port);
       virtual void close();
 

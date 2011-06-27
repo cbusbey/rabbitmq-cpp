@@ -12,11 +12,11 @@ namespace rabbitmqcpp
   class SyncConnection : public Connection
   {
     public:
+      virtual ~SyncConnection() {}
       virtual void open(char const * host, int port); 
       virtual void close() {}
 
-      //TODO: synchonous receive
-      void send(char const* exchange, char const* routingkey, char const* message, bool persistent = false);
+      void send(char const* exchange, char const* routingkey, char const* message, bool persistent);
     private:
       boost::mutex connMutex_;
   };
