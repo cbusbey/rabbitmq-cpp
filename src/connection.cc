@@ -115,16 +115,19 @@ void AsyncConnection::operator()()
   int result;
 
   amqp_basic_deliver_t *d;
-  amqp_basic_properties_t *p;
   size_t body_target;
   size_t body_received;
 
   while (true) 
   {
+    char * pExchange = NULL;
+    char * pRoutingKey = NULL;
+    char * pPayload = NULL;
+
     {
       boost::mutex::scoped_lock(runMutex_);
       if(!doRun_)
-        break;
+        goto clean_up_and_exit;
     }
 
     amqp_maybe_release_buffers(*conn_);
@@ -132,7 +135,7 @@ void AsyncConnection::operator()()
     //wait method frame
     result = amqp_simple_wait_frame(*conn_, &frame);
     if (result < 0)
-      break;
+      goto clean_up_and_exit;
 
     if (frame.frame_type != AMQP_FRAME_METHOD)
       continue;
@@ -141,31 +144,32 @@ void AsyncConnection::operator()()
       continue;
 
     d = (amqp_basic_deliver_t *) frame.payload.method.decoded;
-    //printf("Delivery %u, exchange %.*s routingkey %.*s\n",
-    //  (unsigned) d->delivery_tag,
-    //  (int) d->exchange.len, (char *) d->exchange.bytes,
-	  //  (int) d->routing_key.len, (char *) d->routing_key.bytes);
+
+    pExchange = new char[d->exchange.len+1];
+    strncpy(pExchange, (char *)d->exchange.bytes, d->exchange.len);
+    pExchange[d->exchange.len]='\0';
+
+    pRoutingKey = new char[d->routing_key.len+1];
+    strncpy(pRoutingKey, (char *)d->routing_key.bytes, d->routing_key.len);
+    pRoutingKey[d->routing_key.len]='\0';
 
     //wait on header frame
     result = amqp_simple_wait_frame(*conn_, &frame);
     if (result < 0)
-      break;
+      goto clean_up_and_exit;
 
     if (frame.frame_type != AMQP_FRAME_HEADER) 
     {
+      delete[] pExchange;
+      delete[] pRoutingKey;
+
       throw runtime_error("expected header");
     }
 
-    p = (amqp_basic_properties_t *) frame.payload.properties.decoded;
-    if (p->_flags & AMQP_BASIC_CONTENT_TYPE_FLAG) 
-    {
-    //  printf("Content-type: %.*s\n",
-	   //    (int) p->content_type.len, (char *) p->content_type.bytes);
-    }
-    //printf("----\n");
-
     body_target = frame.payload.properties.body_size;
     body_received = 0;
+
+    pPayload = new char[body_target];
 
     //read in frame content
     while (body_received < body_target) 
@@ -176,21 +180,37 @@ void AsyncConnection::operator()()
 
       if (frame.frame_type != AMQP_FRAME_BODY) 
       {
+        delete[] pExchange;
+        delete[] pRoutingKey;
+        delete[] pPayload;
         throw runtime_error("expected body!");
       }	  
 
+      strncpy(pPayload + body_received, (char *)frame.payload.body_fragment.bytes, frame.payload.body_fragment.len);
       body_received += frame.payload.body_fragment.len;
       assert(body_received <= body_target);
-
-      //amqp_dump(frame.payload.body_fragment.bytes,
-		  //frame.payload.body_fragment.len);
     }
 
     if (body_received != body_target) 
     {
       /* Can only happen when amqp_simple_wait_frame returns <= 0 */
       /* We break here to close the connection */
-      break;
+      goto clean_up_and_exit;
     }
+
+    cb_(pExchange, pRoutingKey, pPayload);
+
+    continue;
+
+clean_up_and_exit:
+    if(pExchange)
+      delete[] pExchange;
+    if(pRoutingKey)
+      delete[] pRoutingKey;
+    if(pPayload)
+      delete[] pPayload;
+
+    break;
   }
+
 }

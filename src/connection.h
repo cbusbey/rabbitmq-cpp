@@ -68,9 +68,12 @@ namespace rabbitmqcpp
   class AsyncConnection : public AbstractConnection
   {
     public:
+
+      //NOTE: responsibility of callback to free up exchange, routingkey, and message (delete[])
       typedef boost::function<void(char const * exchange, char const * routingkey, char const * message)> TMsgCallback;
 
-      AsyncConnection(const TMsgCallback & cb, char const * exchange, char const * bindingkey): 
+      AsyncConnection(TMsgCallback & cb, char const * exchange, char const * bindingkey): 
+        cb_(cb),
         exchange_(exchange),
         bindingkey_(bindingkey),
         doRun_(false) {}
@@ -81,6 +84,7 @@ namespace rabbitmqcpp
       void operator()();
 
     private:
+      TMsgCallback& cb_;
       const std::string exchange_;
       const std::string bindingkey_;
 
