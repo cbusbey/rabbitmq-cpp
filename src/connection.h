@@ -17,12 +17,12 @@
 
 /// OOF.  
 ///
-/// Below are two types of clients. One Synchronous client that makes blocking
-/// calls to publish/subscribe to RabbitMQ. The other is a asynch client that relays
-/// subscription callbacks on a separate thread.
+/// Deriving from the below class are two types of connections. One Synchronous 
+/// connection that makes blocking calls to publish/subscribe to RabbitMQ. 
+/// The other is a asynch connection that relays subscription callbacks on a separate thread.
 
-#ifndef __RABBITMQ_CPP_CLIENT_H
-#define __RABBITMQ_CPP_CLIENT_H
+#ifndef RABBITMQ_CPP_CONNECTION_H
+#define RABBITMQ_CPP_CONNECTION_H
 
 #include <stdlib.h>
 #include <stdint.h>
@@ -31,17 +31,13 @@
 #include <amqp_framing.h>
 
 #include <boost/optional.hpp>
-#include <boost/scoped_ptr.hpp>
-#include <boost/function.hpp>
-#include <boost/thread/mutex.hpp>
-#include <boost/thread/thread.hpp>
 
 namespace rabbitmqcpp
 {
-  class AbstractConnection
+  class Connection
   {
     public:
-      virtual ~AbstractConnection() = 0;
+      virtual ~Connection() = 0;
 
       virtual void open(char const * host, int port) = 0; 
       virtual void close() = 0;
@@ -50,48 +46,6 @@ namespace rabbitmqcpp
       void connect(char const * host, int port); 
       boost::optional<amqp_connection_state_t> conn_;
   };
-
-  /// Synchonous Connection 
-  class SyncConnection : public AbstractConnection
-  {
-    public:
-      virtual void open(char const * host, int port); 
-      virtual void close() {}
-
-      //TODO: synchonous receive
-      void send(char const* exchange, char const* routingkey, char const* message, bool persistent = false);
-    private:
-      boost::mutex connMutex_;
-  };
-
-  /// Connection relays subscription to async callback
-  class AsyncConnection : public AbstractConnection
-  {
-    public:
-
-      //NOTE: responsibility of callback to free up exchange, routingkey, and message (delete[])
-      typedef boost::function<void(char const * exchange, char const * routingkey, char const * message)> TMsgCallback;
-
-      AsyncConnection(TMsgCallback & cb, char const * exchange, char const * bindingkey): 
-        cb_(cb),
-        exchange_(exchange),
-        bindingkey_(bindingkey),
-        doRun_(false) {}
-
-      virtual void open(char const * host, int port);
-      virtual void close();
-
-      void operator()();
-
-    private:
-      TMsgCallback& cb_;
-      const std::string exchange_;
-      const std::string bindingkey_;
-
-      boost::mutex runMutex_;
-      bool doRun_;
-      boost::scoped_ptr<boost::thread> pWorkerThread_;
-  };
 }
 
-#endif //__RABBITMQ_CPP_CLIENT_H
+#endif //RABBITMQ_CPP_CONNECTION_H

@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include <connection.h>
+#include <async_connection.h>
 
 using namespace rabbitmqcpp;
 

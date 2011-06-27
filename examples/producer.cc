@@ -1,5 +1,5 @@
 #include <iostream>
-#include <connection.h>
+#include <sync_connection.h>
 
 using namespace rabbitmqcpp;
 
