@@ -17,6 +17,9 @@ void AsyncConnection::open(char const * host, int port)
 
   connect(host, port);
 
+  if(exchangeType_)
+    declareExchangeInner(exchange_.c_str(), (*exchangeType_).c_str());
+
   doRun_ = true;
   pWorkerThread_.reset(new boost::thread(boost::ref(*this)));
 }

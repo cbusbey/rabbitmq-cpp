@@ -17,10 +17,13 @@ namespace rabbitmqcpp
       //NOTE: responsibility of callback to free up exchange, routingkey, and message (delete[])
       typedef boost::function<void(char const * exchange, char const * routingkey, char const * message, size_t messageLen)> TMsgCallback;
 
-      AsyncConnection(TMsgCallback & cb, char const * exchange, char const * bindingkey): 
+      //exchangeType, if given, will be used to declare the exchange on opening the connection
+      AsyncConnection(TMsgCallback & cb, char const * exchange, char const * bindingkey, boost::optional<std::string> exchangeType =
+          boost::optional<std::string>()): 
         cb_(cb),
         exchange_(exchange),
         bindingkey_(bindingkey),
+        exchangeType_(exchangeType),
         doRun_(false) {}
 
       virtual ~AsyncConnection() {}
@@ -34,6 +37,7 @@ namespace rabbitmqcpp
       TMsgCallback& cb_;
       const std::string exchange_;
       const std::string bindingkey_;
+      const boost::optional<std::string> exchangeType_;
 
       boost::mutex runMutex_;
       bool doRun_;

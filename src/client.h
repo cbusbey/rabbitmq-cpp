@@ -17,6 +17,7 @@ namespace rabbitmqcpp
 
       //TODO: synchonous receive
       void send(char const* exchange, char const* routingkey, char const* message, size_t messageLength, bool persistent = false);
+      void declareExchange(char const * exchange, char const * exchangeType);
 
       typedef AsyncConnection::TMsgCallback TMsgCallback;
       void subscribe(TMsgCallback& cb, char const * exchange, char const * bindingkey);

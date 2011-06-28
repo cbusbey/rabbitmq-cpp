@@ -17,6 +17,7 @@ namespace rabbitmqcpp
       virtual void close() {}
 
       void send(char const* exchange, char const* routingkey, char const* message, size_t messageLen, bool persistent);
+      void declareExchange(char const * exchange, char const * exchangeType);
     private:
       boost::mutex connMutex_;
   };

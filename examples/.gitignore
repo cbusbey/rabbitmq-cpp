@@ -4,3 +4,4 @@ consumer
 producer
 connect
 .libs
+exchange_declare

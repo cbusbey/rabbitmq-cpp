@@ -17,6 +17,11 @@ void Client::send(char const* exchange, char const* routingkey, char const* mess
   conn_.send(exchange, routingkey, message, messageLength, persistent);
 }
 
+void Client::declareExchange(char const * exchange, char const * exchangeType)
+{
+  conn_.declareExchange(exchange, exchangeType);
+}
+
 void Client::subscribe(TMsgCallback & cb, char const * exchange, char const * bindingkey)
 {
   boost::shared_ptr< AsyncConnection>  pSub(new AsyncConnection(cb, exchange, bindingkey));

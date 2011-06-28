@@ -43,6 +43,7 @@ namespace rabbitmqcpp
       virtual void close() = 0;
 
     protected:
+      void declareExchangeInner(char const * exchange, char const * routingkey);
       void connect(char const * host, int port); 
       boost::optional<amqp_connection_state_t> conn_;
   };

@@ -14,6 +14,14 @@ Connection::~Connection()
   amqp_connection_close(*conn_, AMQP_REPLY_SUCCESS);
   amqp_destroy_connection(*conn_);
 }
+void Connection::declareExchangeInner(char const * exchange, char const * exchangeType)
+{
+  if(!conn_)
+    throw runtime_error("client not connected, cannot declare exchange");
+
+  amqp_exchange_declare(*conn_, 1, amqp_cstring_bytes(exchange), amqp_cstring_bytes(exchangeType), 0, 0, amqp_empty_table);
+  amqp_get_rpc_reply(*conn_);
+}
 
 void Connection::connect(char const * host, int port)
 {

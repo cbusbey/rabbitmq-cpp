@@ -10,6 +10,12 @@ void SyncConnection::open(char const * host, int port)
   connect(host, port);
 }
 
+void SyncConnection::declareExchange(char const * exchange, char const * exchangeType)
+{
+  boost::mutex::scoped_lock(connMutex_);
+  declareExchangeInner(exchange, exchangeType);
+}
+
 void SyncConnection::send(char const* exchange, char const* routingkey, char const* message, size_t length, bool persistent)
 {
   boost::mutex::scoped_lock(connMutex_);
