@@ -10,7 +10,7 @@ void SyncConnection::open(char const * host, int port)
   connect(host, port);
 }
 
-void SyncConnection::send(char const* exchange, char const* routingkey, char const* message, bool persistent)
+void SyncConnection::send(char const* exchange, char const* routingkey, char const* message, size_t length, bool persistent)
 {
   boost::mutex::scoped_lock(connMutex_);
   if(!conn_)
@@ -25,6 +25,10 @@ void SyncConnection::send(char const* exchange, char const* routingkey, char con
   else 
     props.delivery_mode = 1;
 
+  amqp_bytes_t msgBytes;
+  msgBytes.len = length;
+  msgBytes.bytes = (void *) message;
+
   if(amqp_basic_publish(*conn_,
     1,
 		amqp_cstring_bytes(exchange),
@@ -32,7 +36,7 @@ void SyncConnection::send(char const* exchange, char const* routingkey, char con
 		0,
 		0,
 		&props,
-		amqp_cstring_bytes(message)) < 0)
+		msgBytes) < 0)
   {
     throw runtime_error("error publishing message");
   }

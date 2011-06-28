@@ -20,5 +20,5 @@ int main(int argc, char * argv[])
   Client c(host, port);
   c.connect();
 
-  c.send(exchange, routingkey, message);
+  c.send(exchange, routingkey, message, strlen(message));
 }

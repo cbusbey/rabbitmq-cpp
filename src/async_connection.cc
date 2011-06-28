@@ -128,7 +128,7 @@ void AsyncConnection::operator()()
       goto clean_up_and_exit;
     }
 
-    cb_(pExchange, pRoutingKey, pPayload);
+    cb_(pExchange, pRoutingKey, pPayload, body_target);
 
     continue;
 

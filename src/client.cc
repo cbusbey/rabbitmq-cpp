@@ -12,9 +12,9 @@ void Client::connect()
   conn_.open(host_.c_str(), port_);
 }
 
-void Client::send(char const* exchange, char const* routingkey, char const* message, bool persistent)
+void Client::send(char const* exchange, char const* routingkey, char const* message, size_t messageLength, bool persistent)
 {
-  conn_.send(exchange, routingkey, message, persistent);
+  conn_.send(exchange, routingkey, message, messageLength, persistent);
 }
 
 void Client::subscribe(TMsgCallback & cb, char const * exchange, char const * bindingkey)
