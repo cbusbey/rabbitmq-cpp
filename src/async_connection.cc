@@ -63,10 +63,15 @@ void AsyncConnection::operator()()
     char * pRoutingKey = NULL;
     char * pPayload = NULL;
 
+    while(!amqp_data_in_buffer(*conn_))
     {
-      boost::mutex::scoped_lock(runMutex_);
-      if(!doRun_)
-        goto clean_up_and_exit;
+      {
+        boost::mutex::scoped_lock(runMutex_);
+        if(!doRun_)
+          goto clean_up_and_exit;
+      }
+
+      sleep(.5);
     }
 
     amqp_maybe_release_buffers(*conn_);
