@@ -7,6 +7,12 @@ void AsyncConnection::close()
 {
   boost::mutex::scoped_lock(runMutex_);
   doRun_ = false;
+
+  if(pWorkerThread_)
+  {
+    pWorkerThread_->join();
+    pWorkerThread_.reset();
+  }
 }
 
 void AsyncConnection::open(char const * host, int port)

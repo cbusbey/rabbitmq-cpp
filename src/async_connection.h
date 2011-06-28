@@ -26,7 +26,7 @@ namespace rabbitmqcpp
         exchangeType_(exchangeType),
         doRun_(false) {}
 
-      virtual ~AsyncConnection() {}
+      virtual ~AsyncConnection() {close();}
 
       virtual void open(char const * host, int port);
       virtual void close();
@@ -43,8 +43,6 @@ namespace rabbitmqcpp
       bool doRun_;
       boost::scoped_ptr<boost::thread> pWorkerThread_;
   };
-
-
 }
 
 #endif //__RABBITMQ_CPP_ASYNC_CONNECTION_H
