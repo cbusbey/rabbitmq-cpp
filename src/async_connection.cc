@@ -10,8 +10,10 @@ void AsyncConnection::close()
 
   if(pWorkerThread_)
   {
-    pWorkerThread_->join();
-    pWorkerThread_.reset();
+    //NOTE, as c lib blocks on amqp_simple_wait_frame, and the utils to check if there are
+    //queued frames don't seem to work as expected, we're resorting to pthread
+    //lib methods to kill the worker thread
+    pthread_cancel(pWorkerThread_->native_handle());
   }
 }
 
@@ -34,6 +36,9 @@ void AsyncConnection::operator()()
 {
   if(!conn_)
     throw runtime_error("cannot subscribe, not connected");
+
+  //guarantees that cancel signal will be received 
+  pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
   amqp_queue_declare_ok_t *r = amqp_queue_declare(*conn_, 1, amqp_empty_bytes, 0, 0, 0, 1, amqp_empty_table);
   amqp_get_rpc_reply(*conn_);
@@ -63,18 +68,13 @@ void AsyncConnection::operator()()
     char * pRoutingKey = NULL;
     char * pPayload = NULL;
 
-    while(!amqp_data_in_buffer(*conn_))
-    {
-      {
-        boost::mutex::scoped_lock(runMutex_);
-        if(!doRun_)
-          goto clean_up_and_exit;
-      }
-
-      sleep(.5);
-    }
-
     amqp_maybe_release_buffers(*conn_);
+
+    {
+      boost::mutex::scoped_lock(runMutex_);
+      if(!doRun_)
+        goto clean_up_and_exit;
+    }
 
     //wait method frame
     result = amqp_simple_wait_frame(*conn_, &frame);
