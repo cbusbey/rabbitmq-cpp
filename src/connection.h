@@ -46,6 +46,8 @@ namespace rabbitmqcpp
       void declareExchangeInner(char const * exchange, char const * routingkey);
       void connect(char const * host, int port); 
       boost::optional<amqp_connection_state_t> conn_;
+
+      int sockfd_;
   };
 }
 

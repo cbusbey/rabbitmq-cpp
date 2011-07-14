@@ -7,6 +7,9 @@ Client::Client(char const * host, int port): host_(host), port_(port)
 
 }
 
+Client::~Client()
+{}
+
 void Client::connect()
 {
   conn_.open(host_.c_str(), port_);

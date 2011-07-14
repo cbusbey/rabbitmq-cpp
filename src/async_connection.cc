@@ -1,3 +1,4 @@
+#include <sys/select.h>
 #include "async_connection.h"
 
 using namespace rabbitmqcpp;
@@ -5,15 +6,14 @@ using namespace std;
 
 void AsyncConnection::close()
 {
-  boost::mutex::scoped_lock(runMutex_);
-  doRun_ = false;
+  {
+    boost::mutex::scoped_lock(runMutex_);
+    doRun_ = false;
+  }
 
   if(pWorkerThread_)
   {
-    //NOTE, as c lib blocks on amqp_simple_wait_frame, and the utils to check if there are
-    //queued frames don't seem to work as expected, we're resorting to pthread
-    //lib methods to kill the worker thread
-    pthread_cancel(pWorkerThread_->native_handle());
+    pWorkerThread_->join();
   }
 }
 
@@ -32,6 +32,45 @@ void AsyncConnection::open(char const * host, int port)
   pWorkerThread_.reset(new boost::thread(boost::ref(*this)));
 }
 
+bool interpretRMQReply(amqp_rpc_reply_t x, char const *context) {
+  switch (x.reply_type) 
+  {
+    case AMQP_RESPONSE_NORMAL:
+      return true;
+
+    case AMQP_RESPONSE_NONE:
+      std::cerr << context << ": missing RPC reply type!" << std::endl;
+      break;
+
+    case AMQP_RESPONSE_LIBRARY_EXCEPTION:
+      std::cerr << context << ": " << amqp_error_string(x.library_error) << std::endl;
+      break;
+
+    case AMQP_RESPONSE_SERVER_EXCEPTION:
+      switch (x.reply.id) 
+      {
+        case AMQP_CONNECTION_CLOSE_METHOD: 
+        {
+          amqp_connection_close_t *m = (amqp_connection_close_t *) x.reply.decoded;
+          std::cerr << context << ": server connection error " << m->reply_code << ", message: " << (char*) m->reply_text.bytes << std::endl;
+          break;
+        }
+        case AMQP_CHANNEL_CLOSE_METHOD: 
+        {
+          amqp_channel_close_t *m = (amqp_channel_close_t *) x.reply.decoded;
+          std::cerr << context << ": server channel error " << m->reply_code << ", message: " << (char*) m->reply_text.bytes << std::endl;
+          break;
+        }
+        default:
+          std::cerr << context << ": unknown server error, method id " <<  x.reply.id << std::endl;
+          break;
+      }
+  }
+
+  return false;
+}    
+
+
 void AsyncConnection::operator()()
 {
   if(!conn_)
@@ -41,7 +80,8 @@ void AsyncConnection::operator()()
   pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
   amqp_queue_declare_ok_t *r = amqp_queue_declare(*conn_, 1, amqp_empty_bytes, 0, 0, 0, 1, amqp_empty_table);
-  amqp_get_rpc_reply(*conn_);
+  if(!interpretRMQReply(amqp_get_rpc_reply(*conn_), "Queue Declare"))
+    return;
 
   amqp_bytes_t queuename = amqp_bytes_malloc_dup(r->queue);
   if(queuename.bytes == NULL) 
@@ -50,10 +90,12 @@ void AsyncConnection::operator()()
   }
 
   amqp_queue_bind(*conn_, 1, queuename, amqp_cstring_bytes(exchange_.c_str()), amqp_cstring_bytes(bindingkey_.c_str()), amqp_empty_table);
-  amqp_get_rpc_reply(*conn_);
+  if(!interpretRMQReply(amqp_get_rpc_reply(*conn_), "Queue Bind"))
+    return;
 
   amqp_basic_consume(*conn_, 1, queuename, amqp_empty_bytes, 0, 1, 0, amqp_empty_table);
-  amqp_get_rpc_reply(*conn_);
+  if(!interpretRMQReply(amqp_get_rpc_reply(*conn_), "Basic Consume"))
+    return;
 
   amqp_frame_t frame;
   int result;
@@ -70,13 +112,30 @@ void AsyncConnection::operator()()
 
     amqp_maybe_release_buffers(*conn_);
 
+    //wait method frame
+    fd_set readfds;
+    FD_ZERO(&readfds);
+    FD_SET(sockfd_, &readfds);
+    struct timeval tv;
+    tv.tv_sec = 0;
+    tv.tv_usec = 500000; //half a second timeout
+
+    int rv = select(sockfd_+1, &readfds, NULL, NULL, &tv);
+
+    if (rv == -1) 
     {
+      std::cerr << "Select error in RMQ ASyncConnection" << std::endl;
+      goto clean_up_and_exit;
+    } else if (rv == 0) //timeout
+    {
+      //check for shutdown
       boost::mutex::scoped_lock(runMutex_);
       if(!doRun_)
         goto clean_up_and_exit;
-    }
 
-    //wait method frame
+      continue;
+    } 
+
     result = amqp_simple_wait_frame(*conn_, &frame);
     if (result < 0)
       goto clean_up_and_exit;

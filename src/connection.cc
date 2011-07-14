@@ -31,15 +31,15 @@ void Connection::connect(char const * host, int port)
   }
 
   conn_ = amqp_new_connection();
-  int sockfd = amqp_open_socket(host, port);
+  sockfd_ = amqp_open_socket(host, port);
 
-  if(sockfd < 0)
+  if(sockfd_ < 0)
   {
     conn_=boost::none;
     throw runtime_error("unable to establish connection");
   }
 
-  amqp_set_sockfd(*conn_, sockfd);
+  amqp_set_sockfd(*conn_, sockfd_);
   amqp_login(*conn_, "/", 0, 131072, 0, AMQP_SASL_METHOD_PLAIN, "guest", "guest");
   amqp_channel_open(*conn_, 1);
   amqp_get_rpc_reply(*conn_);

@@ -13,6 +13,7 @@ namespace rabbitmqcpp
   {
     public:
       Client(char const * host, int port);
+      virtual ~Client();
       void connect();
 
       //TODO: synchonous receive
