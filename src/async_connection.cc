@@ -76,9 +76,6 @@ void AsyncConnection::operator()()
   if(!conn_)
     throw runtime_error("cannot subscribe, not connected");
 
-  //guarantees that cancel signal will be received 
-  pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
-
   amqp_queue_declare_ok_t *r = amqp_queue_declare(*conn_, 1, amqp_empty_bytes, 0, 0, 0, 1, amqp_empty_table);
   if(!interpretRMQReply(amqp_get_rpc_reply(*conn_), "Queue Declare"))
     return;
